@@ -1,6 +1,11 @@
 <?php
 
 $params = require(__DIR__ . '/params.php');
+$db = require(__DIR__ . '/db.php');
+
+if (file_exists(__DIR__ . '/db.local.php')) {
+    $db = require(__DIR__ . '/db.local.php');
+}
 
 $config = [
     'id' => 'basic',
@@ -37,7 +42,20 @@ $config = [
                 ],
             ],
         ],
-        'db' => require(__DIR__ . '/db.php'),
+        'urlManager' => [
+            'baseUrl' => '',
+            'class' => 'yii\web\UrlManager',
+            // Disable index.php
+            'showScriptName' => false,
+            // Disable r= routes
+            'enablePrettyUrl' => true,
+            'rules' => [
+                '<controller:[\w-]+>/<id:\d+>' => '<controller>/index',
+                '<controller:[\w-]+>/<action:[\w-]+>' => '<controller>/<action>',
+                '<controller:[\w-]+>/<action:[\w-]+>/<id:\d+>' => '<controller>/<action>',
+            ],
+        ],
+        'db' => $db,
     ],
     'params' => $params,
 ];
@@ -52,6 +70,9 @@ if (YII_ENV_DEV) {
     $config['bootstrap'][] = 'gii';
     $config['modules']['gii'] = [
         'class' => 'yii\gii\Module',
+        'generators' => [
+            'model' => ['class' => 'app\modules\gii\generators\model\Generator']
+        ]
     ];
 }
 

@@ -8,23 +8,19 @@
 namespace app\assets;
 
 use yii\web\AssetBundle;
+use yii\web\View;
 
 /**
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
  */
-class AppAsset extends AssetBundle
+class JqueryAsset extends AssetBundle
 {
-    public $basePath = '@webroot';
-    public $baseUrl = '@web';
-    public $css = [
-        'css/site.css',
+    public $sourcePath = '@bower/jquery/dist';
+    public $jsOptions = [
+        'position' => \yii\web\View::POS_HEAD
     ];
     public $js = [
-    ];
-    public $depends = [
-        'app\assets\JqueryAsset',
-        'yii\web\YiiAsset',
-        'yii\bootstrap\BootstrapAsset',
+        'jquery.js',
     ];
 }
