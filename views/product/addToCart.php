@@ -32,23 +32,3 @@ use \app\models\Product;
 
 </div>
 
-<script>
-    $('body').on('beforeSubmit', '#add-product', function () {
-    var form = $(this);
-
-    var $modal = $('#product-modal'),
-        modal = $modal.data('bs.modal');
-
-    $.ajax({
-        url: form.attr('action'),
-        type: 'post',
-        data: form.serialize(),
-        success: function () {
-            modal.hide();
-        }
-    });
-
-    return false;
-    });
-
-</script>

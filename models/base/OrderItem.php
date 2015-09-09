@@ -10,7 +10,6 @@ use Yii;
  * @property integer $order_id
  * @property integer $product_id
  * @property integer $count
- * @property string $created_at
  *
  * @property Order $order
  * @property Product $product
@@ -32,8 +31,7 @@ class OrderItem extends \yii\db\ActiveRecord
     {
         return [
             [['order_id', 'product_id'], 'required'],
-            [['order_id', 'product_id', 'count'], 'integer'],
-            [['created_at'], 'safe']
+            [['order_id', 'product_id', 'count'], 'integer']
         ];
     }
 
@@ -46,7 +44,6 @@ class OrderItem extends \yii\db\ActiveRecord
             'order_id' => 'Order ID',
             'product_id' => 'Product ID',
             'count' => 'Count',
-            'created_at' => 'Created At',
         ];
     }
 

@@ -2,10 +2,16 @@
 
 namespace app\controllers;
 
+use app\models\OrderItem;
+use app\models\search\OrderSearch;
+use app\models\User;
 use Yii;
 use app\models\Order;
-use app\models\OrderSearch;
+use yii\data\ActiveDataProvider;
+use yii\db\Query;
+use yii\filters\AccessControl;
 use yii\web\Controller;
+use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 
@@ -17,6 +23,21 @@ class OrderController extends Controller
     public function behaviors()
     {
         return [
+            'access' => [
+                'class' => AccessControl::className(),
+                'rules' => [
+                    [
+                        'actions' => ['index', 'view', 'clear-cart', 'checkout'],
+                        'allow' => true,
+                        'roles' => ['@'],
+                    ],
+                    [
+                        'actions' => ['update', 'delete'],
+                        'allow' => true,
+                        'roles' => [User::ROLE_ADMIN],
+                    ],
+                ],
+            ],
             'verbs' => [
                 'class' => VerbFilter::className(),
                 'actions' => [
@@ -42,52 +63,43 @@ class OrderController extends Controller
     }
 
     /**
-     * Displays a single Order model.
-     * @param integer $id
-     * @return mixed
+     * @param $id
+     * @return string
+     * @throws ForbiddenHttpException
+     * @throws NotFoundHttpException
      */
     public function actionView($id)
     {
+        $identity = Yii::$app->user->identity;
+        $order = Order::findOne(['id' => $id]);
+
+        if ($identity->role == User::ROLE_USER && $order->buyer_id != $identity->id ) {
+            throw new ForbiddenHttpException();
+        }
+
+        $orderItems = OrderItem::find()
+            ->joinWith('product')
+            ->where(['order_id' => $id]);
+
+        $orderItemsDataProvider = new ActiveDataProvider([
+            'query' => $orderItems,
+            'sort' => false
+        ]);
+
+        $total = (new Query())
+            ->select('sum(oi.count * p.price)')
+            ->from('{{%order_items}} oi')
+            ->innerJoin('{{%products}} p', 'oi.product_id = p.id')
+            ->where(['oi.order_id' => $id])
+            ->groupBy('oi.order_id')
+            ->scalar();
+
+
         return $this->render('view', [
             'model' => $this->findModel($id),
+            'orderItemsDataProvider' => $orderItemsDataProvider,
+            'total' => $total
         ]);
-    }
-
-    /**
-     * Creates a new Order model.
-     * If creation is successful, the browser will be redirected to the 'view' page.
-     * @return mixed
-     */
-    public function actionCreate()
-    {
-        $model = new Order();
-
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
-        } else {
-            return $this->render('create', [
-                'model' => $model,
-            ]);
-        }
-    }
-
-    /**
-     * Updates an existing Order model.
-     * If update is successful, the browser will be redirected to the 'view' page.
-     * @param integer $id
-     * @return mixed
-     */
-    public function actionUpdate($id)
-    {
-        $model = $this->findModel($id);
-
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
-        } else {
-            return $this->render('update', [
-                'model' => $model,
-            ]);
-        }
     }
 
     /**
@@ -98,9 +110,38 @@ class OrderController extends Controller
      */
     public function actionDelete($id)
     {
-        $this->findModel($id)->delete();
+        $order = $this->findModel($id);
+        $order->deleted = true;
+        $order->save();
 
         return $this->redirect(['index']);
+    }
+
+    /**
+     * @return \yii\web\Response
+     */
+    public function actionCheckout()
+    {
+        $user = Yii::$app->user->identity;
+
+        $products = Yii::$app->session->get('products');
+
+        if ($products) {
+            if (Order::create($user->id, $products)) {
+                Yii::$app->session->remove('products');
+            }
+        }
+
+        return $this->redirect(['/product']);
+    }
+
+    /**
+     * @return \yii\web\Response
+     */
+    public function actionClearCart()
+    {
+        Yii::$app->session->remove('products');
+        return $this->redirect('/product');
     }
 
     /**

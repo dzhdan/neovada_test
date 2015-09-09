@@ -1,16 +1,16 @@
 <?php
 
-namespace app\models;
+namespace app\models\search;
 
 use Yii;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
-use app\models\Order;
+use app\models\Product;
 
 /**
- * OrderSearch represents the model behind the search form about `app\models\Order`.
+ * CartSearch represents the model behind the search form about `app\models\Product`.
  */
-class OrderSearch extends Order
+class CartSearch extends Product
 {
     /**
      * @inheritdoc
@@ -18,8 +18,9 @@ class OrderSearch extends Order
     public function rules()
     {
         return [
-            [['id', 'deleted', 'buyer_id'], 'integer'],
-            [['created_at'], 'safe'],
+            [['id', 'count', 'deleted'], 'integer'],
+            [['title', 'created_at'], 'safe'],
+            [['price'], 'number'],
         ];
     }
 
@@ -41,7 +42,8 @@ class OrderSearch extends Order
      */
     public function search($params)
     {
-        $query = Order::find();
+        $query = Product::find()
+            ->andWhere(['deleted' => false]);
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
@@ -57,10 +59,13 @@ class OrderSearch extends Order
 
         $query->andFilterWhere([
             'id' => $this->id,
+            'count' => $this->count,
+            'price' => $this->price,
             'deleted' => $this->deleted,
-            'buyer_id' => $this->buyer_id,
             'created_at' => $this->created_at,
         ]);
+
+        $query->andFilterWhere(['like', 'title', $this->title]);
 
         return $dataProvider;
     }

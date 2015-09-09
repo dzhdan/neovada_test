@@ -42,6 +42,10 @@ $config = [
                 ],
             ],
         ],
+        'authManager' => [
+            'class' => 'yii\rbac\PhpManager',
+            'defaultRoles' => ['admin', 'user'],
+        ],
         'urlManager' => [
             'baseUrl' => '',
             'class' => 'yii\web\UrlManager',

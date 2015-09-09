@@ -3,9 +3,16 @@
 namespace app\controllers;
 
 use app\models\forms\AddToCartForm;
+use app\models\Order;
+use app\models\OrderItem;
+use app\models\User;
 use Yii;
 use app\models\Product;
 use app\models\search\ProductSearch;
+use yii\data\ActiveDataProvider;
+use yii\filters\AccessControl;
+use yii\helpers\ArrayHelper;
+use yii\helpers\Url;
 use yii\web\BadRequestHttpException;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
@@ -21,6 +28,26 @@ class ProductController extends Controller
     public function behaviors()
     {
         return [
+            'access' => [
+                'class' => AccessControl::className(),
+                'rules' => [
+                    [
+                        'actions' => ['create', 'view', 'delete', 'update'],
+                        'allow' => true,
+                        'roles' => [User::ROLE_ADMIN],
+                    ],
+                    [
+                        'actions' => ['index'],
+                        'allow' => true,
+                        'roles' => ['@', '?'],
+                    ],
+                    [
+                        'actions' => ['cart', 'add-to-cart', 'validate'],
+                        'allow' => true,
+                        'roles' => [User::ROLE_USER],
+                    ],
+                ],
+            ],
             'verbs' => [
                 'class' => VerbFilter::className(),
                 'actions' => [
@@ -115,13 +142,23 @@ class ProductController extends Controller
      */
     public function actionAddToCart($id)
     {
+
         if (!Yii::$app->request->isAjax) {
             throw new BadRequestHttpException();
         }
 
-         $model = new AddToCartForm(['product_id' => $id]);
-         if($model->load(Yii::$app->request->post()) && $model->validate()) {
-             $t = 745;
+        $model = new AddToCartForm(['product_id' => $id]);
+        if($model->load(Yii::$app->request->post()) && $model->validate()) {
+            $products = [];
+            if (Yii::$app->session->get('products')) {
+                $products = Yii::$app->session->get('products');
+            }
+
+            $products[$id]['count'] = isset($products[$id]['count']) ? $products[$id]['count'] + $model->count : $products[$id]['count'] = $model->count;
+
+            Yii::$app->session['products'] = $products;
+            Yii::$app->getSession()->setFlash('success', 'The product has been successfully added to you cart!');
+            return $this->redirect(Url::to(['/product']));
          }
 
         Yii::$app->response->format = Response::FORMAT_JSON;
@@ -131,6 +168,28 @@ class ProductController extends Controller
                 'model' => $model,
             ])
         ];
+    }
+
+    public function actionCart()
+    {
+        $productsItems = null;
+        $dataProvider = null;
+
+        $products = Yii::$app->session->get('products');
+        if ($products) {
+            $productsIds = array_keys($products);
+
+            $productItems = Product::find()->where(['id' => $productsIds]);
+            $dataProvider = new ActiveDataProvider([
+                'query' => $productItems,
+                'sort' => false
+            ]);
+        }
+
+        return $this->render('cart', [
+            'products' => $products,
+            'dataProvider' => $dataProvider
+        ]);
     }
 
     public function actionValidate($id)

@@ -3,6 +3,8 @@
 /* @var $this \yii\web\View */
 /* @var $content string */
 
+use app\models\User;
+use app\widgets\Alert;
 use yii\helpers\Html;
 use yii\bootstrap\Nav;
 use yii\bootstrap\NavBar;
@@ -27,7 +29,7 @@ AppAsset::register($this);
 <div class="wrap">
     <?php
     NavBar::begin([
-        'brandLabel' => 'My Company',
+        'brandLabel' => 'Neovada Super Shop',
         'brandUrl' => Yii::$app->homeUrl,
         'options' => [
             'class' => 'navbar-inverse navbar-fixed-top',
@@ -36,13 +38,39 @@ AppAsset::register($this);
     echo Nav::widget([
         'options' => ['class' => 'navbar-nav navbar-right'],
         'items' => [
-            ['label' => 'Home', 'url' => ['/site/index']],
-            ['label' => 'About', 'url' => ['/site/about']],
-            ['label' => 'Contact', 'url' => ['/site/contact']],
+            [
+                'label' => 'Cart',
+                'url' => ['/product/cart'],
+                'visible' => Yii::$app->user->can(User::ROLE_USER)
+            ],
+            [
+                'label' => 'Users',
+                'url' => ['/user'],
+                'visible' => Yii::$app->user->can(User::ROLE_ADMIN)
+            ],
+            [
+                'label' => 'Products',
+                'url' => ['/product']
+            ],
+            [
+                'label' => 'Orders',
+                'url' => ['/order'],
+                'visible' => Yii::$app->user->can(User::ROLE_ADMIN)
+            ],
+            [
+                'label' => 'Month Stat',
+                'url' => ['/statistic/month'],
+                'visible' => Yii::$app->user->can(User::ROLE_ADMIN)
+            ],
+            [
+                'label' => 'My orders',
+                'url' => ['/order'],
+                'visible' => Yii::$app->user->can(User::ROLE_USER)
+            ],
             Yii::$app->user->isGuest ?
                 ['label' => 'Login', 'url' => ['/site/login']] :
                 [
-                    'label' => 'Logout (' . Yii::$app->user->identity->username . ')',
+                    'label' => 'Logout (' . Yii::$app->user->identity->email . ')',
                     'url' => ['/site/logout'],
                     'linkOptions' => ['data-method' => 'post']
                 ],
@@ -55,6 +83,7 @@ AppAsset::register($this);
         <?= Breadcrumbs::widget([
             'links' => isset($this->params['breadcrumbs']) ? $this->params['breadcrumbs'] : [],
         ]) ?>
+        <?= Alert::widget() ?>
         <?= $content ?>
     </div>
 </div>

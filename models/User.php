@@ -3,6 +3,8 @@
 namespace app\models;
 
 use Yii;
+use yii\behaviors\TimestampBehavior;
+use yii\db\Expression;
 use yii\web\IdentityInterface;
 
 class User extends \app\models\base\User implements IdentityInterface
@@ -15,6 +17,18 @@ class User extends \app\models\base\User implements IdentityInterface
     const SCENARIO_UPDATE = 'update';
 
     public $password;
+
+    public function behaviors()
+    {
+        return [
+            [
+                'class' => TimestampBehavior::className(),
+                'createdAtAttribute' => 'created_at',
+                'updatedAtAttribute' => false,
+                'value' => new Expression('NOW()'),
+            ],
+        ];
+    }
 
     public function rules()
     {
@@ -96,10 +110,21 @@ class User extends \app\models\base\User implements IdentityInterface
         $this->auth_key = Yii::$app->security->generateRandomString();
     }
 
+    public static function findByEmail($email)
+    {
+        return self::findOne(['email' => $email]);
+    }
+
     public function create()
     {
         $this->setPassword($this->password);
         $this->generateAuthKey();
+        return $this->save();
+    }
+
+    public function updateUser()
+    {
+        $this->setPassword($this->password);
         return $this->save();
     }
 }
